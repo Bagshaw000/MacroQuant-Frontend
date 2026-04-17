@@ -24,7 +24,7 @@ export default function Landing() {
           saturation={2}
         />
 
-        <div className="z-100 absolute md:top-50 md:left-50 md:bottom-50 md:right-50 text-center font-sans font-medium text-2xl md:text-4xl">
+        <div className="z-100 absolute md:top-50 md:left-50 md:bottom-50 md:right-50 text-white text-center font-sans font-medium text-2xl md:text-4xl">
             <h1 className="font-sans">The Macro Economy, Simplified</h1>
             <h1 className="font-normal text-sm md:text-2xl font-sans"> for</h1>
             <h1 className="font-sans">Traders, Investors and Enthusiast</h1>
