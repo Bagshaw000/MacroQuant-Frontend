@@ -25,9 +25,9 @@ export default function Landing() {
         />
 
         <div className="z-100 absolute md:top-50 md:left-50 md:bottom-50 md:right-50 text-center font-sans font-medium text-2xl md:text-4xl">
-            <h1>The Macro Economy, Simplified</h1>
-            <h1 className="font-normal text-sm md:text-2xl"> for</h1>
-            <h1>Traders, Investors and Enthusiast</h1>
+            <h1 className="font-sans">The Macro Economy, Simplified</h1>
+            <h1 className="font-normal text-sm md:text-2xl font-sans"> for</h1>
+            <h1 className="font-sans">Traders, Investors and Enthusiast</h1>
             <div className="mt-10 w-60 mx-auto">
                 <h1 className=" text-sm md:text-xl font-mono font-medium">
                     Join the waitlist
