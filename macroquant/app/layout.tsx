@@ -24,10 +24,13 @@ export default function RootLayout({
 }>) {
   return (
     <html
+      suppressHydrationWarning
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="bg-black">{children}</body>
+      <body className="bg-white" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
