@@ -4,6 +4,7 @@ import Instrument from "@/component/instrument";
 import Globe from "react-globe.gl";
 import { useCotState } from "../util/state";
 import { useEffect } from "react";
+import { DashboardComp } from "@/component/dashboard";
 export default function Dashboard() {
   // const myGlobe = new ThreeGlobe()
   // .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-night.jpg')
@@ -12,7 +13,7 @@ export default function Dashboard() {
   return (
     <div className="">
       {/* <Instrument /> */}
-      <COT />
+      <DashboardComp />
     </div>
   );
 }

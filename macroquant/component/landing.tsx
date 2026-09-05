@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 
 export default function Landing() {
   return (
-    <div className="w-screen h-full">
-      <div style={{ width: "100%", height: "100%", position: "relative" }} className="z-0!  display: grid;
-  place-items: center;"> 
+    <div className="w-screen min-h-screen">
+      <div style={{ width: "100%", position: "relative" }} className="z-0! grid min-h-screen place-items-center">
         <LightRays
           raysOrigin="top-center"
           raysColor="#ffffff"
@@ -24,7 +23,7 @@ export default function Landing() {
           saturation={2}
         />
 
-        <div className="z-100 absolute md:top-50 md:left-50 md:bottom-50 md:right-50 text-white text-center font-sans font-medium text-2xl md:text-4xl">
+        <div className="z-100 absolute inset-0 flex flex-col items-center justify-center px-6 text-white text-center font-sans font-medium text-2xl md:text-4xl">
             <h1 className="font-sans">The Macro Economy, Simplified</h1>
             <h1 className="font-normal text-sm md:text-2xl font-sans"> for</h1>
             <h1 className="font-sans">Traders, Investors and Enthusiast</h1>

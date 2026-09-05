@@ -4,7 +4,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
 
-    const apiUrl = "https://domianmt5.xyz/v1/cot_ttf";
+    const apiUrl = "https://domianmt5.xyz/v1/cot";
 
     console.log("Proxying request to:", apiUrl);
 

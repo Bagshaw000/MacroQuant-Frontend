@@ -10,25 +10,42 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import {
+  cotWeeklyEntries,
+  latestCotReport,
+  type CotInstrument,
+  type CotWeeklyReport,
+} from "@/app/util/cot";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CiCircleInfo, CiSearch } from "react-icons/ci";
 import { RxPeople } from "react-icons/rx";
 
+/** Latest value in a `pct_change` horizon series (keyed by report date). */
+function latestPct(series: Record<string, number> | undefined): number | null {
+  if (!series) return null;
+  const entry = Object.entries(series)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .at(-1);
+  return entry ? entry[1] : null;
+}
+
+type PctMetric = "large_spec_net" | "commercial_net";
+type PctSummary = Record<
+  PctMetric,
+  Record<"1_month" | "3_month" | "6_month", number | null>
+>;
+
+const emptyPctSummary: PctSummary = {
+  large_spec_net: { "1_month": null, "3_month": null, "6_month": null },
+  commercial_net: { "1_month": null, "3_month": null, "6_month": null },
+};
+
 export default function COT() {
-  const [symbolsData, setSymbolsData] = useState<Record<string, any>>({});
-  const [percData, setPerData] = useState<Record<string, any>>({
-    Large_Spec_Net: {
-      "1_month": null,
-      "3_month": null,
-      "6_month": null,
-    },
-    Commercial_Net: {
-      "1_month": null,
-      "3_month": null,
-      "6_month": null,
-    },
-  });
+  const [symbolsData, setSymbolsData] = useState<
+    Array<[string, CotWeeklyReport]>
+  >([]);
+  const [percData, setPerData] = useState<PctSummary>(emptyPctSummary);
   const [dataSet, setDataSet] = useState<boolean>(false);
   const { fetchCot, data, loading, error } = useCotState();
   const handleAllData = () => {
@@ -39,52 +56,26 @@ export default function COT() {
     }
   };
 
-  const handleSymbolData = (value: Record<string, any>) => {
-    const sortedData = Object.entries(value as Record<string, any>)
-      .slice(0, -2) // 1. Remove the last two items
-      .sort(([keyA], [keyB]) => keyB.localeCompare(keyA));
+  const handleSymbolData = (instrument: CotInstrument) => {
+    const weekly = cotWeeklyEntries(instrument).sort(([a], [b]) =>
+      b.localeCompare(a),
+    );
 
-    const pctLChange =
-      Object.entries(
-        value?.["pct_change"]?.["Large_Spec_Net"]?.["1_month"] || {},
-      )
-        .sort(([keyA], [keyB]) => keyB.localeCompare(keyA))
-        .at(0)?.[1] || null;
-    const pct3LChange =
-      Object.entries(value["pct_change"]?.["Large_Spec_Net"]?.["3_month"] || {})
-        .sort(([keyA], [keyB]) => keyB.localeCompare(keyA))
-        .at(0)?.[1] || null;
-    const pct6LChange =
-      Object.entries(value["pct_change"]?.["Large_Spec_Net"]?.["6_month"] || {})
-        .sort(([keyA], [keyB]) => keyB.localeCompare(keyA))
-        .at(0)?.[1] || null;
-
-    const pctCChange =
-      Object.entries(value["pct_change"]?.["Commercial_Net"]?.["1_month"] || {})
-        .sort(([keyA], [keyB]) => keyB.localeCompare(keyA))
-        .at(0)?.[1] || null;
-    const pct3CChange =
-      Object.entries(value["pct_change"]?.["Commercial_Net"]?.["3_month"] || {})
-        .sort(([keyA], [keyB]) => keyB.localeCompare(keyA))
-        .at(0)?.[1] || null;
-    const pct6CChange =
-      Object.entries(value["pct_change"]?.["Commercial_Net"]?.["6_month"] || {})
-        .sort(([keyA], [keyB]) => keyB.localeCompare(keyA))
-        .at(0)?.[1] || null;
-
-    const pctData = {
-      Large_Spec_Net: {
-        "1_month": pctLChange,
-        "3_month": pct3LChange,
-        "6_month": pct6LChange,
+    const pct = instrument.pct_change;
+    const pctData: PctSummary = {
+      large_spec_net: {
+        "1_month": latestPct(pct?.large_spec_net?.["1_month"]),
+        "3_month": latestPct(pct?.large_spec_net?.["3_month"]),
+        "6_month": latestPct(pct?.large_spec_net?.["6_month"]),
       },
-      Commercial_Net: {
-        "1_month": pctCChange,
-        "3_month": pct3CChange,
-        "6_month": pct6CChange,
+      commercial_net: {
+        "1_month": latestPct(pct?.commercial_net?.["1_month"]),
+        "3_month": latestPct(pct?.commercial_net?.["3_month"]),
+        "6_month": latestPct(pct?.commercial_net?.["6_month"]),
       },
     };
-    setSymbolsData(sortedData);
+
+    setSymbolsData(weekly);
     setDataSet(true);
     setPerData(pctData);
   };
@@ -207,64 +198,56 @@ export default function COT() {
           {loading ? (
             <div>Loading COT data...</div>
           ) : (
-            Object.entries(data).map(([key, value]) => (
-              <div key={key}>
-                {Object.entries(value).map(([k, v]) => (
-                  <div
-                    key={k}
-                    className="border p-4 text-sm rounded-xl w-90 mb-3"
-                    onClick={() => handleSymbolData(v as Record<string, any>)}
-                  >
-                    <div className="flex flex-row justify-between">
-                      <div>
-                        <h1 className="text-black text-lg font-semibold">
-                          {k}
-                        </h1>
+            Object.entries(data).map(([group, instruments]) => (
+              <div key={group}>
+                {instruments &&
+                  Object.entries(instruments).map(([name, instrument]) => {
+                    const latest = latestCotReport(instrument);
+                    return (
+                      <div
+                        key={name}
+                        className="border p-4 text-sm rounded-xl w-90 mb-3"
+                        onClick={() => handleSymbolData(instrument)}
+                      >
+                        <div className="flex flex-row justify-between">
+                          <div>
+                            <h1 className="text-black text-lg font-semibold">
+                              {name}
+                            </h1>
+                          </div>
+                          <div>
+                            {" "}
+                            <h1 className="text-xs">Speculative Net</h1>
+                            <span>
+                              {latest
+                                ? Number(latest.large_spec_net).toLocaleString(
+                                    "en-US",
+                                  )
+                                : "—"}
+                            </span>
+                          </div>
+                          <div>
+                            {" "}
+                            <h1 className="text-xs">Commercial Net</h1>
+                            <span>
+                              {latest
+                                ? Number(latest.commercial_net).toLocaleString(
+                                    "en-US",
+                                  )
+                                : "—"}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-xs">
+                            {" "}
+                            Updated:
+                            {latest?.report_date_as_yyyy_mm_dd?.split("T")[0]}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        {" "}
-                        <h1 className="text-xs">Speculative Net</h1>
-                        <span>
-                          {Number(
-                            Object.entries(v as Record<string, any>)
-                              .slice(0, -2) // 1. Remove the last two items
-                              .sort(([keyA], [keyB]) =>
-                                keyA.localeCompare(keyB),
-                              ) // 2. Sort remaining by Key
-                              .at(-1)?.[1]["Large_Spec_Net"],
-                          ).toLocaleString("en-US")}
-                        </span>
-                      </div>
-                      <div>
-                        {" "}
-                        <h1 className="text-xs">Commercial Net</h1>
-                        <span>
-                          {Number(
-                            Object.entries(v as Record<string, any>)
-                              .slice(0, -2) // 1. Remove the last two items
-                              .sort(([keyA], [keyB]) =>
-                                keyA.localeCompare(keyB),
-                              ) // 2. Sort remaining by Key
-                              .at(-1)?.[1]["Commercial_Net"],
-                          ).toLocaleString("en-US")}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="text-xs">
-                        {" "}
-                        Updated:
-                        {
-                          Object.entries(v as Record<string, any>)
-                            .slice(0, -2) // 1. Remove the last two items
-                            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB)) // 2. Sort remaining by Key
-                            .at(-1)?.[1]
-                            ["Report_Date_as_YYYY_MM_DD"].split("T")[0]
-                        }
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
               </div>
             ))
           )}
@@ -292,8 +275,8 @@ export default function COT() {
                     <TableRow>
                       <TableCell className="font-medium">Monthly</TableCell>
                       <TableCell>
-                        {percData["Large_Spec_Net"]["1_month"] ? (
-                          percData["Large_Spec_Net"]["1_month"]
+                        {percData["large_spec_net"]["1_month"] ? (
+                          percData["large_spec_net"]["1_month"]
                         ) : (
                           <>
                             <h1>Nan</h1>
@@ -302,8 +285,8 @@ export default function COT() {
                       </TableCell>
                       <TableCell>
                         {" "}
-                        {percData["Commercial_Net"]["1_month"] ? (
-                          percData["Commercial_Net"]["1_month"]
+                        {percData["commercial_net"]["1_month"] ? (
+                          percData["commercial_net"]["1_month"]
                         ) : (
                           <>
                             <h1>Nan</h1>
@@ -316,8 +299,8 @@ export default function COT() {
                     <TableRow>
                       <TableCell className="font-medium">Quartely</TableCell>
                       <TableCell>
-                        {percData["Large_Spec_Net"]["3_month"] ? (
-                          percData["Large_Spec_Net"]["3_month"]
+                        {percData["large_spec_net"]["3_month"] ? (
+                          percData["large_spec_net"]["3_month"]
                         ) : (
                           <>
                             <h1>Nan</h1>
@@ -326,8 +309,8 @@ export default function COT() {
                       </TableCell>
                       <TableCell>
                         {" "}
-                        {percData["Commercial_Net"]["3_month"] ? (
-                          percData["Commercial_Net"]["3_month"]
+                        {percData["commercial_net"]["3_month"] ? (
+                          percData["commercial_net"]["3_month"]
                         ) : (
                           <>
                             <h1>Nan</h1>
@@ -340,8 +323,8 @@ export default function COT() {
                     <TableRow>
                       <TableCell className="font-medium">Bi-Anually</TableCell>
                       <TableCell>
-                        {percData["Large_Spec_Net"]["6_month"] ? (
-                          percData["Large_Spec_Net"]["6_month"]
+                        {percData["large_spec_net"]["6_month"] ? (
+                          percData["large_spec_net"]["6_month"]
                         ) : (
                           <>
                             <h1>Nan</h1>
@@ -350,8 +333,8 @@ export default function COT() {
                       </TableCell>
                       <TableCell>
                         {" "}
-                        {percData["Commercial_Net"]["6_month"] ? (
-                          percData["Commercial_Net"]["6_month"]
+                        {percData["commercial_net"]["6_month"] ? (
+                          percData["commercial_net"]["6_month"]
                         ) : (
                           <>
                             <h1>Nan</h1>

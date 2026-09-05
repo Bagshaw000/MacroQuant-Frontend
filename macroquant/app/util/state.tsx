@@ -2,10 +2,11 @@
 
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
+import type { CotResponse } from "@/app/util/cot";
 // import type {} from '@redux-devtools/extension'
 
 interface CotState {
-  data: Object;
+  data: CotResponse;
   loading: boolean;
   fetchCot: () => Promise<void>;
   error: string | null;
@@ -46,9 +47,10 @@ export const useCotState = create<CotState>((set) => ({
       // console.log("Response:", data);
     } catch (error) {
       console.error("Detailed error:", error);
-      // console.error("Error name:", error.);
-      // console.error("Error message:", error.message);
-      // console.error("Error cause:", error.cause);
+      set({
+        loading: false,
+        error: error instanceof Error ? error.message : "Failed to fetch data",
+      });
     }
   },
 }));
